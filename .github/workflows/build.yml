@@ -1,0 +1,60 @@
+name: Build OpenBSD Very Cool System
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install pyinstaller pygame pillow keyboard pycaw comtypes
+
+    - name: Build executable
+      shell: pwsh
+      run: |
+        $currentDir = (Get-Location).Path
+        python -m PyInstaller --onefile --windowed `
+          --name "openbsdverycoolsystem" `
+          --icon="$currentDir\nya.ico" `
+          --add-data "$currentDir\рыбка.jpeg;." `
+          --add-data "$currentDir\nya.ico;." `
+          --add-data "$currentDir\ljnn.mp3;." `
+          --add-data "$currentDir\trava.mp3;." `
+          --collect-submodules pygame `
+          --hidden-import keyboard `
+          --hidden-import pycaw `
+          --hidden-import comtypes `
+          larp.py
+
+    - name: Verify build
+      shell: pwsh
+      run: |
+        if (Test-Path "dist\openbsdverycoolsystem.exe") {
+          $size = (Get-Item "dist\openbsdverycoolsystem.exe").Length
+          Write-Host "✅ Build successful! Size: $([math]::Round($size/1MB, 2)) MB"
+        } else {
+          Write-Host "❌ Build failed - executable not found"
+          exit 1
+        }
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: openbsdverycoolsystem
+        path: dist/openbsdverycoolsystem.exe
+        compression-level: 9
+        retention-days: 14
